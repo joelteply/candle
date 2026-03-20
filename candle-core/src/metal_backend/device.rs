@@ -136,6 +136,20 @@ impl MetalDevice {
         Ok(())
     }
 
+    /// Release all unused Metal buffers from the allocation pool.
+    ///
+    /// Buffers with `Arc::strong_count == 1` (only the pool holds a reference)
+    /// are removed, allowing the underlying MTLBuffer to be deallocated.
+    /// Call this after dropping tensors (e.g. clearing KV cache) to reclaim
+    /// GPU memory between sequential inference runs.
+    ///
+    /// Also waits for pending GPU commands to complete before cleaning up,
+    /// ensuring no in-flight operations reference the buffers.
+    pub fn release_unused_buffers(&self) -> Result<()> {
+        self.wait_until_completed()?;
+        self.drop_unused_buffers()
+    }
+
     pub fn command_encoder(&self) -> Result<ComputeCommandEncoder> {
         let commands = self.commands.write().map_err(MetalError::from)?;
         let (flush, command_encoder) = commands.command_encoder().map_err(MetalError::from)?;
