@@ -2,18 +2,49 @@ name: CI / cuda
 
 on:
   workflow_dispatch:
+    inputs:
+      gpu_runtime:
+        description: Run runtime tests on an available self-hosted CUDA runner
+        type: boolean
+        default: false
   pull_request:
 
 jobs:
+  compile-cuda:
+    # Forks cannot use Hugging Face's private AWS runner group. Keep automatic
+    # CUDA compilation on public runners, including Pascal with CUDA 12.9.
+    # This is compile coverage; actual GPU execution is a separate job/receipt.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: '61'
+            features: cuda
+          - arch: '86'
+            features: fused-moe
+    container:
+      image: nvidia/cuda:12.9.1-devel-ubuntu24.04
+    env:
+      CUDA_COMPUTE_CAP: ${{ matrix.arch }}
+      RAYON_NUM_THREADS: '2'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v6
+      - run: apt-get update && apt-get install -y curl build-essential libssl-dev pkg-config
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p candle-transformers --features ${{ matrix.features }}
+      - name: Compile atomic regression (no GPU execution on hosted runner)
+        run: nvcc -arch=sm_${{ matrix.arch }} -std=c++17 candle-kernels/tests/half_atomic_add.cu -o /tmp/half-atomic-add
   test-cuda:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.run_id }}
       cancel-in-progress: true
-    runs-on:
-      group: aws-g5-4xlarge-cache
+    runs-on: ${{ github.repository == 'huggingface/candle' && fromJSON('{"group":"aws-g5-4xlarge-cache"}') || fromJSON('["self-hosted","linux","x64","cuda"]') }}
     container:
       image: nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
-    if: ${{ github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name }}
+    if: ${{ (github.repository == 'huggingface/candle' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) || (github.event_name == 'workflow_dispatch' && inputs.gpu_runtime) }}
     permissions:
       contents: write
       packages: write
