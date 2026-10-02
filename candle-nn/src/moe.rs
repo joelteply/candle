@@ -1,11 +1,11 @@
 // Adapted from https://github.com/guoqingbao/attention.rs/blob/main/src/moe.rs
-#[cfg(feature = "cuda")]
+#[cfg(feature = "fused-moe")]
 use candle::cuda_backend::kernels::ffi;
 #[allow(unused_imports)]
 use candle::quantized::{self, QTensor};
 use candle::{Result, Tensor};
 
-#[cfg(feature = "cuda")]
+#[cfg(feature = "fused-moe")]
 pub fn moe_gemm(
     input: &Tensor,
     weights: &Tensor,
@@ -151,7 +151,7 @@ pub fn moe_gemm(
     }
 }
 
-#[cfg(not(feature = "cuda"))]
+#[cfg(not(feature = "fused-moe"))]
 pub fn moe_gemm(
     _: &Tensor,
     _: &Tensor,
@@ -161,10 +161,12 @@ pub fn moe_gemm(
     _: usize,
     _: bool,
 ) -> Result<Tensor> {
-    candle::bail!("moe_gemm is only implemented for the cuda backend")
+    candle::bail!(
+        "moe_gemm requires the fused-moe feature and a compatible CUDA Tensor Core device"
+    )
 }
 
-#[cfg(feature = "cuda")]
+#[cfg(feature = "fused-moe")]
 #[allow(clippy::too_many_arguments)]
 pub fn moe_gemm_gguf(
     input: &Tensor,
@@ -336,7 +338,7 @@ pub fn moe_gemm_gguf(
     }
 }
 
-#[cfg(not(feature = "cuda"))]
+#[cfg(not(feature = "fused-moe"))]
 #[allow(clippy::too_many_arguments)]
 pub fn moe_gemm_gguf(
     _: &Tensor,
@@ -348,5 +350,7 @@ pub fn moe_gemm_gguf(
     _: bool,
     _: candle::DType,
 ) -> Result<Tensor> {
-    candle::bail!("moe_gemm_gguf is only implemented for the cuda backend")
+    candle::bail!(
+        "moe_gemm_gguf requires the fused-moe feature and a compatible CUDA Tensor Core device"
+    )
 }

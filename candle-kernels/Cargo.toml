@@ -11,5 +11,10 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 
+[features]
+default = []
+# Separate tensor-core MoE kernels from the general CUDA tensor backend.
+fused-moe = []
+
 [build-dependencies]
 cudaforge = "0.1.2"

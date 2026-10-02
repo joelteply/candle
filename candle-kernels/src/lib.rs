@@ -79,4 +79,5 @@ mdl!(SORT, Sort);
 mdl!(TERNARY, Ternary);
 mdl!(UNARY, Unary);
 
+#[cfg(feature = "fused-moe")]
 pub mod ffi;

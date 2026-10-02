@@ -78,6 +78,7 @@ cuda = [
     "dep:cudaforge",
 ]
 cudnn = ["candle/cudnn", "candle-nn/cudnn", "candle-transformers/cudnn"]
+fused-moe = ["cuda", "candle-transformers/fused-moe"]
 flash-attn = ["cuda", "candle-transformers/flash-attn", "dep:candle-flash-attn"]
 mkl = [
     "dep:intel-mkl-src",
