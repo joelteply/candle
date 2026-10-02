@@ -47,6 +47,14 @@ Having installed `candle` with Cuda support, simply define the `device` to be on
 
 For more advanced examples, please have a look at the following section.
 
+In this fork, `cuda` enables the general CUDA tensor backend. The specialized
+Qwen3 fused-MoE kernels are opt-in through `fused-moe` on `candle-nn`,
+`candle-transformers`, or `candle-examples`. Applications that use these fused
+operations must enable that feature and satisfy their CUDA Tensor Core hardware
+requirements. Calling a fused operation without the feature returns an explicit
+error. Dense models and tensor/training users no longer compile or link the
+unrelated MoE archive merely by enabling CUDA.
+
 ## Check out our examples
 
 These online demos run entirely in your browser:

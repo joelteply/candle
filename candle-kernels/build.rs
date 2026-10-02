@@ -21,6 +21,12 @@ fn main() -> Result<()> {
 
     bindings.write(&ptx_path)?;
 
+    // Dense models, tensor operations and training do not use the fused MoE
+    // archive. Do not impose its Tensor Core requirements on every CUDA user.
+    if env::var_os("CARGO_FEATURE_FUSED_MOE").is_none() {
+        return Ok(());
+    }
+
     let mut moe_builder = KernelBuilder::default()
         .source_files(vec![
             "src/moe/moe_gguf.cu",
